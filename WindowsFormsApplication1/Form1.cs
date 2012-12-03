@@ -12,10 +12,17 @@ namespace PSRCalc
 {
     public partial class Form1 : Form
     {
+        //recipeDataGrid.DataSource = recipe;
+
+
         static Dictionary<string, Player> PlayerDics = new Dictionary<string, Player>();
 
         static Dictionary<string, Player> Players = new Dictionary<string, Player>();
         //  static List<CheckBox> cCheckBoxList = new List<CheckBox>();
+        SQLiteDatabase cDB = new SQLiteDatabase("Dota.s3db");
+        static bool bAnalyzed = false;
+        DotaPSR cPSR;
+
         public Form1()
         {
             InitializeComponent();
@@ -123,6 +130,23 @@ namespace PSRCalc
 
         private void InitializeData()
         {
+            DataTable cdbplayers;
+            String query = "select pname, psr, uid, win, lose from players";
+            cdbplayers = cDB.GetDataTable(query);
+            foreach (DataRow r in cdbplayers.Rows)
+            {
+                Player cPlayer = new Player(r["pname"].ToString(), Convert.ToUInt32(r["psr"]), Convert.ToInt32(r["uid"]));
+                cPlayer.iLose = Convert.ToInt32(r["lose"]);
+                cPlayer.iLose = Convert.ToInt32(r["win"]);
+                PlayerDics.Add(r["pname"].ToString(), cPlayer);
+            }
+            // un comment this when db populating is needed
+            //PopulateDB();
+        }
+
+        private void PopulateDB()
+        {
+
             PlayerDics.Add("nokdu", new Player("nokdu", 1500));         //wlw
             PlayerDics.Add("hyuk", new Player("hyuk", 1500));           //lwl
             PlayerDics.Add("bublapse", new Player("bublapse", 1500));   //wlw
@@ -133,6 +157,14 @@ namespace PSRCalc
             PlayerDics.Add("soon", new Player("soon", 1500));           //lwl
             PlayerDics.Add("rejang", new Player("rejang", 1500));       //wlw
             PlayerDics.Add("cid", new Player("cid", 1500));             //lwl
+
+            foreach (KeyValuePair<string, Player> p in PlayerDics)
+            {
+                Dictionary<string, string> sInsertData = new Dictionary<string, string>();
+                sInsertData.Add("pname", p.Value.Name);
+                sInsertData.Add("psr", p.Value.PSR.ToString());
+                cDB.Insert("players", sInsertData);
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -207,7 +239,7 @@ namespace PSRCalc
 
             string sToAppend = "Total: " + iTotal.ToString();
             AppendStringTab1(sToAppend);
-            DotaPSR cPSR = new DotaPSR(cParticipatingPlayers1.Values.ToList(), cParticipatingPlayers2.Values.ToList());
+            cPSR = new DotaPSR(cParticipatingPlayers1.Values.ToList(), cParticipatingPlayers2.Values.ToList());
             AppendStringTab1(cPSR.sDebugString);
 
             foreach (GroupBox cb in groupBox1.Controls.OfType<GroupBox>().Reverse())
@@ -252,6 +284,8 @@ namespace PSRCalc
                     }
                 }
             }
+
+            bAnalyzed = true;
         }
 
         private void AppendStringTab1(string s)
@@ -267,6 +301,7 @@ namespace PSRCalc
 
         private void button2_Click(object sender, EventArgs e)
         {
+            bAnalyzed = false;
             Players.Clear();
             Players.Add("", new Player("", 0));
             foreach (CheckBox c in tabPage3.Controls.OfType<CheckBox>())
@@ -349,6 +384,7 @@ namespace PSRCalc
 
         private void button3_Click(object sender, EventArgs e)
         {
+            bAnalyzed = false;
             Players.Clear();
             //foreach (CheckBox c in tabPage3.Controls.OfType<CheckBox>())
             //{
@@ -403,21 +439,133 @@ namespace PSRCalc
             groupBox1.Refresh();
             groupBox7.Refresh();
         }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            if (!bAnalyzed)
+            {
+                MessageBox.Show("Team not analyzed yet");
+                return;
+            }
+            string swinner = "1";
+            string sloser = "2";
+            // team1 wins
+            InsertMatchInfo(swinner, sloser, 1);
+            bAnalyzed = false;
+
+        }
+
+        private void InsertMatchInfo(string swinner, string sloser, int iWinningTeam)
+        {
+            Guid iGUID = Guid.NewGuid();    // new match id
+            // insert the match first
+            Dictionary<string, string> cMatchinfo = new Dictionary<string, string>();
+            cMatchinfo.Add("UID", iGUID.ToString());
+            cMatchinfo.Add("winner", swinner);
+            cDB.Insert("match", cMatchinfo);
+
+            // insert the match details
+            foreach (GroupBox cb in groupBox1.Controls.OfType<GroupBox>())
+            {
+                if (cb is GroupBox)
+                {
+                    if (cb.Enabled)
+                    {
+                        InsertMatchPlayerInfo(swinner, iGUID, cb, iWinningTeam == 1);
+                    }
+                }
+            }
+            foreach (GroupBox cb in groupBox7.Controls.OfType<GroupBox>())
+            {
+                if (cb is GroupBox)
+                {
+                    if (cb.Enabled)
+                    {
+                        InsertMatchPlayerInfo(sloser, iGUID, cb, iWinningTeam == 2);
+                    }
+                }
+            }
+        }
+
+        private void InsertMatchPlayerInfo(string swinner, Guid iGUID, GroupBox cb, bool bWin)
+        {
+            foreach (ComboBox combo in cb.Controls.OfType<ComboBox>())
+            {
+                if (combo.SelectedValue == null) continue;
+                Player cP = (Player)combo.SelectedValue;
+                if (cP.Name == "") continue;
+                Dictionary<string, string> cMatchPlayerInfo = new Dictionary<string, string>();
+                cMatchPlayerInfo.Add("matchid", iGUID.ToString());
+                cMatchPlayerInfo.Add("playerid", cP.iUID.ToString());
+                cMatchPlayerInfo.Add("team", swinner);
+                cDB.Insert("match_info", cMatchPlayerInfo);
+
+                // update player info
+                if (bWin)
+                {
+                    ++cP.iWin;
+                    cP.PSR += cPSR.cWinLoseDic[cP.Name].fWinPoint;
+                }
+                else
+                {
+                    ++cP.iLose;
+                    cP.PSR += cPSR.cWinLoseDic[cP.Name].fLosePoint;
+                }
+                Dictionary<string, string> cPlayerUpdate = new Dictionary<string,string>();
+                cPlayerUpdate.Add("win", cP.iWin.ToString());
+                cPlayerUpdate.Add("lose", cP.iLose.ToString());
+                cPlayerUpdate.Add("psr", cP.PSR.ToString());
+                cDB.Update("players", cPlayerUpdate, string.Format("UID = {0}", cP.iUID));
+                comboBox1_SelectedIndexChanged(combo, EventArgs.Empty);
+
+
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if (!bAnalyzed)
+            {
+                MessageBox.Show("Team not analyzed yet");
+                return;
+            }
+            string swinner = "2";
+            string sloser = "1";
+            InsertMatchInfo(swinner, sloser, 2);
+            bAnalyzed = false;
+        }
     }
 
     public class Player
     {
         public string Name { get; set; }
         public double PSR { get; set; }
+        public int iUID { get; set; }
+        public int iWin { get; set; }
+        public int iLose { get; set; }
         public Player(string _name)
         {
             Name = _name;
             PSR = 1500;
+            iUID = 0;
+            iWin = 0;
+            iLose = 0;
         }
         public Player(string _name, uint _i)
         {
             Name = _name;
             PSR = _i;
+            iUID = 0;
+            iWin = 0;
+            iLose = 0;
+        }
+        public Player(string _name, uint _i, int _iUID)
+        {
+            Name = _name;
+            PSR = _i;
+            iUID = _iUID;
+            iWin = 0;
+            iLose = 0;
         }
 
         public string RenderInfo()
