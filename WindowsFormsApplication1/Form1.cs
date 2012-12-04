@@ -131,7 +131,7 @@ namespace PSRCalc
         private void InitializeData()
         {
             DataTable cdbplayers;
-            String query = "select pname, psr, uid, win, lose from players";
+            String query = "select pname, psr, uid, win, lose from players order by abs(psr - (select avg(psr) from players))";
             cdbplayers = cDB.GetDataTable(query);
             foreach (DataRow r in cdbplayers.Rows)
             {
@@ -146,16 +146,17 @@ namespace PSRCalc
 
         private void PopulateDB()
         {
+            PlayerDics.Add("boro", new Player("boro", 1500));    
 
             PlayerDics.Add("nokdu", new Player("nokdu", 1500));         //wlw
-            PlayerDics.Add("hyuk", new Player("hyuk", 1500));           //lwl
             PlayerDics.Add("bublapse", new Player("bublapse", 1500));   //wlw
             PlayerDics.Add("wolfmad", new Player("wolfmad", 1500));     //wlw
-            PlayerDics.Add("dooly", new Player("dooly", 1500));         //lwl
             PlayerDics.Add("xxxmind", new Player("xxxmind", 1500));     //wlw
+            PlayerDics.Add("rejang", new Player("rejang", 1500));       //wlw
+            PlayerDics.Add("hyuk", new Player("hyuk", 1500));           //lwl
+            PlayerDics.Add("dooly", new Player("dooly", 1500));         //lwl
             PlayerDics.Add("hellkite0", new Player("hellkite0", 1500)); //lwl
             PlayerDics.Add("soon", new Player("soon", 1500));           //lwl
-            PlayerDics.Add("rejang", new Player("rejang", 1500));       //wlw
             PlayerDics.Add("cid", new Player("cid", 1500));             //lwl
 
             foreach (KeyValuePair<string, Player> p in PlayerDics)
@@ -256,6 +257,7 @@ namespace PSRCalc
                                 cb.Text = "No Player";
                                 continue;
                             }
+                            if (combo.Text == "") continue;
                             DotaPlayerPSR cPlayer;
                             cPSR.cWinLoseDic.TryGetValue(combo.Text, out cPlayer);
                             cb.Text = cPlayer.Name + ":" + cPlayer.fWinPoint + "/" + cPlayer.fLosePoint;
@@ -277,6 +279,7 @@ namespace PSRCalc
                                 cb.Text = "No Player";
                                 continue;
                             }
+                            if (combo.Text == "") continue;
                             DotaPlayerPSR cPlayer;
                             cPSR.cWinLoseDic.TryGetValue(combo.Text, out cPlayer);
                             cb.Text = cPlayer.Name + ":" + cPlayer.fWinPoint + "/" + cPlayer.fLosePoint;
@@ -304,6 +307,7 @@ namespace PSRCalc
             bAnalyzed = false;
             Players.Clear();
             Players.Add("", new Player("", 0));
+            double avg = 0;
             foreach (CheckBox c in tabPage3.Controls.OfType<CheckBox>())
             {
                 if (c.Checked)
@@ -311,8 +315,14 @@ namespace PSRCalc
                     Player cP;
                     PlayerDics.TryGetValue(c.Text, out cP);
                     Players.Add(cP.Name, cP);
+                    avg += cP.PSR;
                 }
             }
+            avg /= Players.Count;
+            var sortedp = from pl in Players where pl.Value.Name != "" orderby (Math.Abs(avg - pl.Value.PSR)) select pl;
+            //var sortedp = from pl in Players where pl.Value.Name != "" select pl;
+            Players = sortedp.ToDictionary(t => t.Key, t => t.Value);
+            
             if (Players.Count > 0)
             {
                 int iGBoxCnt = 0;
@@ -533,6 +543,46 @@ namespace PSRCalc
             string sloser = "1";
             InsertMatchInfo(swinner, sloser, 2);
             bAnalyzed = false;
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            string sOut = "Team1" + Environment.NewLine;
+            foreach (GroupBox cb in groupBox1.Controls.OfType<GroupBox>())
+            {
+                if (cb is GroupBox)
+                {
+                    if (cb.Enabled)
+                    {
+                        foreach (ComboBox combo in cb.Controls.OfType<ComboBox>())
+                        {
+                            if (combo.SelectedValue == null) continue;
+                            Player cP = (Player)combo.SelectedValue;
+                            if (cP.Name == "") continue;
+                            sOut += cP.Name + ":" + cP.PSR.ToString() + Environment.NewLine;
+                        }
+                    }
+                }
+            }
+            sOut += "Team2" + Environment.NewLine;
+            foreach (GroupBox cb in groupBox7.Controls.OfType<GroupBox>())
+            {
+                if (cb is GroupBox)
+                {
+                    if (cb.Enabled)
+                    {
+                        foreach (ComboBox combo in cb.Controls.OfType<ComboBox>())
+                        {
+                            if (combo.SelectedValue == null) continue;
+                            Player cP = (Player)combo.SelectedValue;
+                            if (cP.Name == "") continue;
+                            sOut += cP.Name + ":" + cP.PSR.ToString() + Environment.NewLine;
+                        }
+                    }
+                }
+            }
+
+            AppendStringTab1(sOut);
         }
     }
 

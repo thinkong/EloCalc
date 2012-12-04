@@ -61,6 +61,8 @@
             this.comboBox9 = new System.Windows.Forms.ComboBox();
             this.textBox9 = new System.Windows.Forms.TextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.button5 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.textBox11 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
@@ -69,8 +71,7 @@
             this.button3 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.textBox10 = new System.Windows.Forms.TextBox();
-            this.button4 = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
+            this.button6 = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox6.SuspendLayout();
             this.groupBox5.SuspendLayout();
@@ -411,8 +412,29 @@
             this.tabPage2.Text = "Post Game";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // button5
+            // 
+            this.button5.Location = new System.Drawing.Point(396, 37);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(167, 55);
+            this.button5.TabIndex = 0;
+            this.button5.Text = "Team2Wins";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(68, 37);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(167, 55);
+            this.button4.TabIndex = 0;
+            this.button4.Text = "Team1Wins";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
+            // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.button6);
             this.tabPage1.Controls.Add(this.textBox11);
             this.tabPage1.Controls.Add(this.button1);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
@@ -493,25 +515,15 @@
             this.textBox10.Size = new System.Drawing.Size(231, 57);
             this.textBox10.TabIndex = 0;
             // 
-            // button4
+            // button6
             // 
-            this.button4.Location = new System.Drawing.Point(68, 37);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(167, 55);
-            this.button4.TabIndex = 0;
-            this.button4.Text = "Team1Wins";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
-            // 
-            // button5
-            // 
-            this.button5.Location = new System.Drawing.Point(396, 37);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(167, 55);
-            this.button5.TabIndex = 0;
-            this.button5.Text = "Team2Wins";
-            this.button5.UseVisualStyleBackColor = true;
-            this.button5.Click += new System.EventHandler(this.button5_Click);
+            this.button6.Location = new System.Drawing.Point(526, 44);
+            this.button6.Name = "button6";
+            this.button6.Size = new System.Drawing.Size(132, 35);
+            this.button6.TabIndex = 2;
+            this.button6.Text = "DumpInfo";
+            this.button6.UseVisualStyleBackColor = true;
+            this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
             // Form1
             // 
@@ -600,6 +612,7 @@
         private System.Windows.Forms.TextBox textBox11;
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Button button6;
     }
 }
 
